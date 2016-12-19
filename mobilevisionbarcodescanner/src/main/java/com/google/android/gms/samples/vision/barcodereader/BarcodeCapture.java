@@ -393,6 +393,30 @@ public final class BarcodeCapture extends BarcodeFragment {
         }
     }
 
+    public void takePicture() {
+        mCameraSource.takePicture(new CameraSource.ShutterCallback() {
+            @Override
+            public void onShutter() {
+
+            }
+        }, new CameraSource.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] data) {
+                if (mCaptureCallback != null) mCaptureCallback.onPictureTaken(data);
+            }
+        });
+    }
+
+    private CaptureCallback mCaptureCallback;
+
+    public void setCaptureCallback(CaptureCallback captureCallback) {
+        mCaptureCallback = captureCallback;
+    }
+
+    public interface CaptureCallback {
+        void onPictureTaken(byte[] data);
+    }
+
     private class ScaleListener implements ScaleGestureDetector.OnScaleGestureListener {
 
         /**
