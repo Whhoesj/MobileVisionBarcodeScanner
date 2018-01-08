@@ -27,6 +27,7 @@ import android.widget.CheckBox;
 
 import com.google.android.gms.samples.vision.barcodereader.BarcodeCapture;
 import com.google.android.gms.samples.vision.barcodereader.BarcodeGraphic;
+import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.barcode.Barcode;
 
 import java.util.List;
@@ -46,8 +47,10 @@ public class MainActivity extends AppCompatActivity implements BarcodeRetriever 
 
     private static final String TAG = "BarcodeMain";
 
-    CheckBox fromXMl;
-    SwitchCompat drawRect, autoFocus, supportMultiple, touchBack, drawText;
+    CheckBox fromXMl, pause;
+    SwitchCompat drawRect, autoFocus, supportMultiple, touchBack, drawText, flash, frontCam;
+
+    BarcodeCapture barcodeCapture;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,16 +58,25 @@ public class MainActivity extends AppCompatActivity implements BarcodeRetriever 
         setContentView(R.layout.activity_main);
 
 
-
-        final BarcodeCapture barcodeCapture = (BarcodeCapture) getSupportFragmentManager().findFragmentById(barcode);
+        barcodeCapture = (BarcodeCapture) getSupportFragmentManager().findFragmentById(barcode);
         barcodeCapture.setRetrieval(this);
 
         fromXMl = (CheckBox) findViewById(R.id.from_xml);
+        pause = (CheckBox) findViewById(R.id.pause);
         drawRect = (SwitchCompat) findViewById(R.id.draw_rect);
         autoFocus = (SwitchCompat) findViewById(R.id.focus);
         supportMultiple = (SwitchCompat) findViewById(R.id.support_multiple);
         touchBack = (SwitchCompat) findViewById(R.id.touch_callback);
         drawText = (SwitchCompat) findViewById(R.id.draw_text);
+        flash = (SwitchCompat) findViewById(R.id.on_flash);
+        frontCam = (SwitchCompat) findViewById(R.id.front_cam);
+
+        findViewById(R.id.stop).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                barcodeCapture.stopScanning();
+            }
+        });
 
         findViewById(R.id.refresh).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -72,12 +84,20 @@ public class MainActivity extends AppCompatActivity implements BarcodeRetriever 
                 if (fromXMl.isChecked()) {
 
                 } else {
-                    barcodeCapture.setShowDrawRect(drawRect.isChecked());
-                    barcodeCapture.setSupportMultipleScan(supportMultiple.isChecked());
-                    barcodeCapture.setTouchAsCallback(touchBack.isChecked());
-                    barcodeCapture.shouldAutoFocus(autoFocus.isChecked());
-                    barcodeCapture.setShouldShowText(drawText.isChecked());
-                    barcodeCapture.refresh();
+                    barcodeCapture.setShowDrawRect(drawRect.isChecked())
+                            .setSupportMultipleScan(supportMultiple.isChecked())
+                            .setTouchAsCallback(touchBack.isChecked())
+                            .shouldAutoFocus(autoFocus.isChecked())
+                            .setShowFlash(flash.isChecked())
+                            .setShowFlash(flash.isChecked())
+                            .setBarcodeFormat(Barcode.ALL_FORMATS)
+                            .setCameraFacing(frontCam.isChecked() ? CameraSource.CAMERA_FACING_FRONT : CameraSource.CAMERA_FACING_BACK)
+                            .setShouldShowText(drawText.isChecked());
+                    if (pause.isChecked())
+                        barcodeCapture.pause();
+                    else
+                        barcodeCapture.resume();
+                    barcodeCapture.refresh(true);
                 }
             }
         });
@@ -91,12 +111,14 @@ public class MainActivity extends AppCompatActivity implements BarcodeRetriever 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this)
                         .setTitle("code retrieved")
                         .setMessage(barcode.displayValue);
                 builder.show();
             }
         });
+        barcodeCapture.stopScanning();
 
 
     }
@@ -123,11 +145,20 @@ public class MainActivity extends AppCompatActivity implements BarcodeRetriever 
 
     @Override
     public void onBitmapScanned(SparseArray<Barcode> sparseArray) {
+        for (int i = 0; i < sparseArray.size(); i++) {
+            Barcode barcode = sparseArray.valueAt(i);
+            Log.e("value", barcode.displayValue);
+        }
 
     }
 
     @Override
     public void onRetrievedFailed(String reason) {
+
+    }
+
+    @Override
+    public void onPermissionRequestDenied() {
 
     }
 

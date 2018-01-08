@@ -17,6 +17,7 @@ package com.google.android.gms.samples.vision.barcodereader;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -26,7 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
@@ -41,6 +42,7 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.samples.vision.barcodereader.ui.camera.CameraSource;
 import com.google.android.gms.samples.vision.barcodereader.ui.camera.CameraSourcePreview;
 import com.google.android.gms.samples.vision.barcodereader.ui.camera.GraphicOverlay;
+import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.MultiProcessor;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
@@ -130,11 +132,13 @@ public final class BarcodeCapture extends BarcodeFragment {
                     public void accept(Boolean granted) throws Exception {
                         if (granted) {
                             createCameraSource(isAutoFocus(), isShowFlash());
+                        } else {
+                            barcodeRetriever.onPermissionRequestDenied();
                         }
                     }
                 });
     }
-    
+
 
     /**
      * Creates and starts the camera.  Note that this uses a higher resolution in comparison
@@ -144,27 +148,32 @@ public final class BarcodeCapture extends BarcodeFragment {
      * Suppressing InlinedApi since there is a check that the minimum version is met before using
      * the constant.
      */
+
     @SuppressLint("InlinedApi")
     private void createCameraSource(boolean autoFocus, boolean useFlash) {
+        createCameraSource(getCustomBarcodeDetector(), autoFocus, useFlash);
+    }
+
+    @SuppressLint("InlinedApi")
+    private void createCameraSource(Detector<Barcode> barcodeDetector, boolean autoFocus, boolean useFlash) {
 
 
         // A barcode detector is created to track barcodes.  An associated multi-processor instance
         // is set to receive the barcode detection results, track the barcodes, and maintain
         // graphics for each barcode on screen.  The factory is used by the multi-processor to
         // create a separate tracker instance for each barcode.
-        BarcodeDetector barcodeDetector = new BarcodeDetector.Builder(getContext())
-                .setBarcodeFormats(getBarcodeFormat())
-                .build();
 
 
         BarcodeTrackerFactory barcodeFactory = new BarcodeTrackerFactory(mGraphicOverlay) {
             @Override
             void onCodeDetected(Barcode barcode) {
                 if (!isTouchAsCallback() && !supportMultipleScan()) {
-                    barcodeRetriever.onRetrieved(barcode);
+                    if (!isPause())
+                        barcodeRetriever.onRetrieved(barcode);
                 }
             }
         };
+
         barcodeDetector.setProcessor(
                 new MultiProcessor.Builder<>(barcodeFactory).build());
 
@@ -192,12 +201,19 @@ public final class BarcodeCapture extends BarcodeFragment {
             }
         }
 
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        ((Activity) getContext()).getWindowManager()
+                .getDefaultDisplay()
+                .getMetrics(displayMetrics);
+        int height = displayMetrics.heightPixels;
+        int width = displayMetrics.widthPixels;
+
         // Creates and starts the camera.  Note that this uses a higher resolution in comparison
         // to other detection examples to enable the barcode detector to detect small barcodes
         // at long distances.
         CameraSource.Builder builder = new CameraSource.Builder(getContext(), barcodeDetector)
-                .setFacing(CameraSource.CAMERA_FACING_BACK)
-                .setRequestedPreviewSize(1600, 1024)
+                .setFacing(getCameraFacing())
+                .setRequestedPreviewSize(height, width)
                 .setRequestedFps(15.0f);
 
         // make sure that auto focus is an available option
@@ -222,12 +238,23 @@ public final class BarcodeCapture extends BarcodeFragment {
         startCameraSource();
     }
 
-    public void refresh() {
+    public void refresh(boolean forceRefresh) {
+        if (getCustomBarcodeDetector().isOperational())
+            getCustomBarcodeDetector().release();
         mGraphicOverlay.setDrawRect(isShowDrawRect());
         mGraphicOverlay.setRectColors(getRectColors());
         mGraphicOverlay.setShowText(isShouldShowText());
         mCameraSource.setFocusMode(isAutoFocus() ? Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE : null);
-        mCameraSource.setFlashMode(isShowFlash() ? Camera.Parameters.FLASH_MODE_TORCH : null);
+        mCameraSource.setFlashMode(isShowFlash() ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF);
+        if ((getCameraFacing() != mCameraSource.getCameraFacing()) || isBarcodeFormatUpdate() || forceRefresh) {
+            setBarcodeFormatUpdate(false);
+            mCameraSource.setCameraFacing(getCameraFacing());
+            mCameraSource.stop();
+            mCameraSource.release();
+            createCameraSource(isAutoFocus(), isShowFlash());
+            startCameraSource();
+        }
+
     }
 
     /**
@@ -446,5 +473,19 @@ public final class BarcodeCapture extends BarcodeFragment {
         public void onScaleEnd(ScaleGestureDetector detector) {
             mCameraSource.doZoom(detector.getScaleFactor());
         }
+    }
+
+    @Override
+    public void stopScanning() {
+        super.stopScanning();
+        if (getCustomBarcodeDetector().isOperational())
+            getCustomBarcodeDetector().release();
+
+
+    }
+
+    @Override
+    public Camera retrieveCamera() {
+        return mCameraSource.getCamera();
     }
 }

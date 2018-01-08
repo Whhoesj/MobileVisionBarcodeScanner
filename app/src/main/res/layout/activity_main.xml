@@ -19,7 +19,7 @@
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             app:gvb_auto_focus="true"
-            app:gvb_code_format="all_format"
+            app:gvb_code_format="code_39|aztec"
             app:gvb_flash="false"
             app:gvb_rect_colors="@array/rect_color" />
     </RelativeLayout>
@@ -45,7 +45,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="auto focus" />
+                android:text="focus" />
 
             <android.support.v7.widget.SwitchCompat
                 android:id="@+id/draw_rect"
@@ -53,7 +53,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="18dp"
                 android:layout_weight="1"
-                android:text="draw rect" />
+                android:text="rect" />
+
+
+            <android.support.v7.widget.SwitchCompat
+                android:id="@+id/on_flash"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_weight="1"
+                android:text="flash" />
 
 
         </LinearLayout>
@@ -70,7 +79,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="support multiple" />
+                android:text="multiple" />
 
             <android.support.v7.widget.SwitchCompat
                 android:id="@+id/touch_callback"
@@ -78,7 +87,17 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="18dp"
                 android:layout_weight="1"
-                android:text="touch callback" />
+                android:text="touch" />
+
+
+            <android.support.v7.widget.SwitchCompat
+                android:id="@+id/front_cam"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_weight="1"
+                android:text="front cam" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -101,6 +120,29 @@
                 android:layout_weight="1"
                 android:checked="true"
                 android:text="From xml" />
+
+            <CheckBox
+                android:id="@+id/pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="pause" />
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/stop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Stop" />
 
             <Button
                 android:id="@+id/refresh"
